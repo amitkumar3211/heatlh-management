@@ -37,12 +37,12 @@ export default function FreelancerDashboard() {
             <p className="text-gray-600">Welcome back, Sarah Ahmed!</p>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/freelancer/dashboard/edit">
+            {/* <Link href="/freelancer/dashboard/edit">
               <button className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"></path></svg>
                 Add Widget
               </button>
-            </Link>
+            </Link> */}
             <div className="text-right">
               <p className="text-sm text-gray-600 mb-1">Member Since</p>
               <p className="text-xl font-semibold text-gray-900">January 2024</p>

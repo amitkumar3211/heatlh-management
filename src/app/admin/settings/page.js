@@ -41,12 +41,12 @@ export default function SettingsPage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Settings</h1>
           <p className="text-gray-600">Configure system and business settings</p>
         </div>
-        <Link href="/admin/settings/add">
+        {/* <Link href="/admin/settings/add">
           <button className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"></path></svg>
             Add Setting
           </button>
-        </Link>
+        </Link> */}
       </div>
 
       {/* Save Message */}

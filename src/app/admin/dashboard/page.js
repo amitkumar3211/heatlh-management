@@ -67,12 +67,12 @@ export default function AdminDashboard() {
             <p className="text-gray-600">Order and Freelancer Management System</p>
           </div>
           <div className="flex gap-2 items-center">
-            <Link href="/admin/dashboard/add">
+            {/* <Link href="/admin/dashboard/add">
               <button className="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold py-3 px-6 rounded-lg transition-colors mr-4">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd"></path></svg>
                 Add Widget
               </button>
-            </Link>
+            </Link> */}
             {['week', 'month', 'year'].map((frame) => (
               <button
                 key={frame}
