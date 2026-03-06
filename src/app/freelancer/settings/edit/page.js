@@ -356,6 +356,6 @@ export default function SettingsEditPage() {
           </form>
         </div>
       </div>
-    </div>
+    
   );
 }

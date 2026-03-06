@@ -216,6 +216,6 @@ export default function EditPayout() {
           </form>
         </div>
       </div>
-    </div>
+  
   );
 }

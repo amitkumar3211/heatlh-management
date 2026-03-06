@@ -257,6 +257,6 @@ export default function EditJob() {
           </form>
         </div>
       </div>
-    </div>
+   
   );
 }

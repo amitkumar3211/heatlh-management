@@ -65,7 +65,7 @@ export default function AddPaymentPage() {
 
       {/* Form Container */}
       <div className="bg-white rounded-lg border-2 border-gray-200 p-8">
-
+        <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-800 mb-3">Payment ID *</label>
@@ -183,6 +183,6 @@ export default function AddPaymentPage() {
         </form>
       </div>
       </div>
-    </div>
+
   );
 }

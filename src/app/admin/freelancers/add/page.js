@@ -163,34 +163,4 @@ export default function AddFreelancerPage() {
       </div>
     </div>
   );
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-              >
-                <option value="Active">Active</option>
-                <option value="Pending Approval">Pending Approval</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Bio</label>
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                placeholder="Enter bio"
-                rows="4"
-              />
-            </div>
-
-            <div className="flex gap-4 pt-6">
-              <button
-                type="submit"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                <SaveIcon />
-                Add Freelancer
-              </button>
-  );
 }
-                onClick={() => router.back()}

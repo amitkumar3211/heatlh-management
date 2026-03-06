@@ -195,6 +195,6 @@ export default function EditInvoice() {
           </form>
         </div>
       </div>
-    </div>
+    
   );
 }

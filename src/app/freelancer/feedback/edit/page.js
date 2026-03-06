@@ -200,6 +200,6 @@ export default function EditFeedback() {
           </form>
         </div>
       </div>
-    </div>
+   
   );
 }

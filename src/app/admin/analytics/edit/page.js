@@ -171,16 +171,5 @@ export default function EditAnalyticsRecord() {
     </div>
   );
 }
-    reportName: 'Monthly Analytics Report',
-    dateRange: 'January 2025',
-    metrics: {
-      totalRevenue: 45000,
-      totalOrders: 320,
-      activeFreelancers: 125,
-      avgRating: 4.7
-    },
-    description: 'Comprehensive monthly analytics and performance metrics'
-  });
-
-  const [message, setMessage] = useState('');
+ 
 
