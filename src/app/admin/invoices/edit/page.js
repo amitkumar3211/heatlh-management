@@ -157,16 +157,6 @@ export default function EditInvoice() {
     </div>
   );
 }
-    invoiceId: 'INV-2025-001',
-    clientName: 'ABC Corporation',
-    amount: 5000,
-    status: 'Pending',
-    dueDate: '2025-02-28',
-    issueDate: '2025-01-28',
-    description: 'Freelance services rendered',
-    paymentMethod: 'Bank Transfer',
-    notes: 'Payment terms: Net 30'
-  });
 
   const [message, setMessage] = useState('');
 

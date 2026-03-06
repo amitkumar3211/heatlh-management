@@ -112,22 +112,6 @@ export default function EditSetting() {
     </div>
   );
 }
-    platformName: 'Health Management Platform',
-    currency: 'USD',
-    timezone: 'UTC',
-    platformCommission: 15,
-    minimumJobAmount: 100,
-    maxJobAmount: 50000,
-    supportEmail: 'support@example.com',
-    maintenanceMode: false,
-    emailNotifications: true,
-    twoFactorAuth: true,
-    autoPayoutEnabled: true,
-    payoutSchedule: 'Weekly',
-    description: 'Global freelance marketplace for health management services'
-  });
-
-  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;

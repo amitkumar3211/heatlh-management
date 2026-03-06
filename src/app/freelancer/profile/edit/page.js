@@ -94,8 +94,8 @@ export default function ProfileEditPage() {
             
             <div>
               <label className="block text-sm font-medium text-gray-800 mb-2">Full Name</label>
-              <input
-                type="text"
+        );
+      }
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
