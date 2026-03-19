@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 const DashboardIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -148,12 +149,12 @@ export default function AdminLayout({ children }) {
 
 function NavLink({ href, label, icon, sidebarOpen }) {
   return (
-    <a
+    <Link
       href={href}
       className="flex items-center gap-3 rounded-lg px-4 py-3 text-gray-300 transition-colors duration-200 hover:bg-green-600 hover:text-white active:bg-green-700"
     >
       {icon}
       {sidebarOpen && <span className="text-sm font-medium">{label}</span>}
-    </a>
+    </Link>
   );
 }
