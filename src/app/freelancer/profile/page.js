@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getAccessToken } from '@/lib/auth/tokenStorage';
 
 const EditIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -34,8 +35,63 @@ export default function ProfilePage() {
     bankAccount: 'DE89 3704 0044 0532 0130 00',
     bankName: 'Sample Bank',
   });
+  const [authError, setAuthError] = useState(null);
 
   const [newQualification, setNewQualification] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = getAccessToken();
+        if (!token) {
+          window.location.href = '/login?error=unauthorized';
+          return;
+        }
+
+        // First: verify email + get redirect target
+        const res = await fetch('/api/me', {
+          method: 'GET',
+          headers: { authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (cancelled) return;
+
+        if (!res.ok || !json.ok) {
+          if (res.status === 401) {
+            window.location.href = '/login?error=unauthorized';
+            return;
+          }
+          if (res.status === 403) {
+            window.localStorage.setItem('pending_verify_email', json?.user?.email ?? '');
+            window.location.href = '/verify-email';
+            return;
+          }
+          setAuthError(json.error ?? 'Could not load profile.');
+          return;
+        }
+
+        // Then: fetch profile data using token-only API
+        const profileRes = await fetch('/api/profile', {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        const profileJson = await profileRes.json();
+        if (cancelled) return;
+
+        const user = json.user;
+        setProfile((prev) => ({
+          ...prev,
+          fullName: user?.user_metadata?.fullName || prev.fullName,
+          email: user?.email || prev.email,
+        }));
+      } catch (e) {
+        if (!cancelled) setAuthError(e?.message ?? 'Could not load profile.');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,6 +117,11 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-white p-8">
+      {authError && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+          {authError}
+        </div>
+      )}
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>

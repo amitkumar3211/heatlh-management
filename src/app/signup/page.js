@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
+import { getAccessToken } from '@/lib/auth/tokenStorage';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -12,11 +13,30 @@ export default function SignupPage() {
     acceptTerms: false,
   });
   const [toast, setToast] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+
+  useEffect(() => {
+    // If already logged in, redirect away from signup.
+    const token = getAccessToken();
+    if (!token) return;
+    (async () => {
+      try {
+        const res = await fetch('/api/me', {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (!res.ok || !json.ok) return;
+        window.location.href = json.redirectTo ?? '/freelancer/profile';
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -26,7 +46,7 @@ export default function SignupPage() {
     }));
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
@@ -39,8 +59,32 @@ export default function SignupPage() {
       return;
     }
 
-    console.log('Signup attempt:', formData);
-    showToast('Account created successfully!', 'success');
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        showToast(json.error ?? 'Signup failed', 'error');
+        return;
+      }
+      showToast(json.message ?? 'Account created! Verify your email.', 'success');
+      setTimeout(() => {
+        window.localStorage.setItem('pending_verify_email', formData.email);
+        window.location.href = `/verify-email?email=${encodeURIComponent(formData.email)}`;
+      }, 800);
+    } catch (err) {
+      showToast(err?.message ?? 'Signup failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -157,9 +201,10 @@ export default function SignupPage() {
             {/* Signup Button */}
             <button
               type="submit"
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 mt-6"
             >
-              Create Account
+              {isLoading ? 'Creating...' : 'Create Account'}
             </button>
           </form>
 

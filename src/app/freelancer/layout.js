@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRequireClientAuth } from '@/lib/auth/requireClientAuth';
 
 const DashboardIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -50,6 +51,7 @@ const ProfileIcon = () => (
 
 export default function FreelancerLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  useRequireClientAuth({ role: 'freelancer' });
 
   return (
     <div className="flex h-screen bg-white">

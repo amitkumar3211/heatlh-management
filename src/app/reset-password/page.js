@@ -1,20 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
+import { setAccessToken } from '@/lib/auth/tokenStorage';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState(null);
+  const [resetCreds, setResetCreds] = useState({ code: null, access_token: null, refresh_token: null });
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleResetPassword = (e) => {
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get('code');
+
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const access_token = hash.get('access_token');
+    const refresh_token = hash.get('refresh_token');
+
+    setResetCreds({
+      code,
+      access_token,
+      refresh_token,
+    });
+  }, []);
+
+  const handleResetPassword = async (e) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
@@ -28,17 +45,34 @@ export default function ResetPasswordPage() {
     }
 
     setIsLoading(true);
-    console.log('Reset password:', { password });
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const payload = { newPassword: password };
+      if (resetCreds.code) payload.code = resetCreds.code;
+      if (resetCreds.access_token && resetCreds.refresh_token) {
+        payload.access_token = resetCreds.access_token;
+        payload.refresh_token = resetCreds.refresh_token;
+      }
+
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        showToast(json.error ?? 'Reset failed', 'error');
+        return;
+      }
+      if (json.access_token) setAccessToken(json.access_token);
       showToast('Password reset successfully!', 'success');
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         window.location.href = '/login';
-      }, 2000);
-    }, 1000);
+      }, 800);
+    } catch (err) {
+      showToast(err?.message ?? 'Reset failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

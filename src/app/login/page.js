@@ -1,33 +1,117 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
+import { getAccessToken, setAccessToken, clearAccessToken } from '@/lib/auth/tokenStorage';
+import { useDispatch } from 'react-redux';
+import { setAuth, clearAuth } from '@/store/authSlice';
 
 export default function LoginPage() {
+  const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [toast, setToast] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const handleLogin = (e) => {
+  useEffect(() => {
+    // If already logged in, redirect to role-based dashboard.
+    const token = getAccessToken();
+    if (!token) return;
+
+    (async () => {
+      try {
+        const res = await fetch('/api/me', {
+          headers: { authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (!res.ok || !json.ok) return;
+        window.location.href = json.redirectTo ?? '/freelancer/profile';
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // API implementation will be added later
-    console.log('Login attempt:', { email, password });
-    showToast('Login successful!', 'success');
+    setIsLoading(true);
+    try {
+      clearAccessToken();
+      dispatch(clearAuth());
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        if (json?.needsVerification) {
+          window.localStorage.setItem('pending_verify_email', email);
+          window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+          return;
+        }
+        showToast(json.error ?? 'Login failed', 'error');
+        return;
+      }
+
+      if (json.access_token) setAccessToken(json.access_token);
+      showToast('Login successful!', 'success');
+      setTimeout(async () => {
+        try {
+          const token = json.access_token ?? getAccessToken();
+          const meRes = await fetch('/api/me', {
+            headers: { authorization: `Bearer ${token}` },
+          });
+          const meJson = await meRes.json();
+          if (meRes.status === 403) {
+            window.localStorage.setItem('pending_verify_email', email);
+            window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+            return;
+          }
+          if (meRes.ok && meJson?.ok) {
+            dispatch(setAuth({ token, role: meJson.role, is_superadmin: meJson.is_superadmin }));
+          }
+          window.location.href = meJson.redirectTo ?? json.redirectTo ?? '/freelancer/profile';
+        } catch {
+          window.location.href = json.redirectTo ?? '/freelancer/profile';
+        }
+      }, 200);
+    } catch (err) {
+      showToast(err?.message ?? 'Login failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleForgotPassword = (e) => {
+  const handleForgotPassword = async (e) => {
     e.preventDefault();
-    console.log('Forgot password for:', forgotEmail);
-    showToast('Password reset link sent to your email!', 'success');
-    setShowForgotPassword(false);
-    setForgotEmail('');
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        showToast(json.error ?? 'Could not send reset link', 'error');
+        return;
+      }
+      showToast('Password reset link sent to your email!', 'success');
+      setShowForgotPassword(false);
+      setForgotEmail('');
+    } catch (err) {
+      showToast(err?.message ?? 'Could not send reset link', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -94,9 +178,10 @@ export default function LoginPage() {
             {/* Login Button */}
             <button
               type="submit"
+              disabled={isLoading}
               className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
             >
-              Sign In
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
@@ -109,7 +194,7 @@ export default function LoginPage() {
 
           {/* Sign Up Link */}
           <p className="text-center text-gray-700">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a href="/signup" className="text-green-600 hover:text-green-700 font-semibold transition-colors">
               Sign up as a freelancer
             </a>
@@ -123,7 +208,7 @@ export default function LoginPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Reset Password</h2>
             <p className="text-gray-600 mb-6">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we&apos;ll send you a link to reset your password.
             </p>
 
             <form onSubmit={handleForgotPassword} className="space-y-4">
@@ -143,15 +228,17 @@ export default function LoginPage() {
                     setShowForgotPassword(false);
                     setForgotEmail('');
                   }}
+                  disabled={isLoading}
                   className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
+                  disabled={isLoading}
                   className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
                 >
-                  Send Reset Link
+                  {isLoading ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </div>
             </form>
