@@ -9,25 +9,23 @@ function mustEnv(name) {
   return v;
 }
 
-async function ensureUser(supabaseAdmin, { email, password, email_confirm = true, user_metadata }) {
+async function createUser(supabaseAdmin, { email, password, user_metadata }) {
   const { data, error } = await supabaseAdmin.auth.admin.createUser({
     email,
     password,
-    email_confirm,
+    email_confirm: true,
     user_metadata,
   });
 
-  // If user already exists, Supabase may error. We'll try to fetch and continue.
-  if (error) {
-    // Common message: "A user with this email address has already been registered"
-    const { data: listData, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-    if (listError) throw error;
-    const existing = listData?.users?.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-    if (!existing) throw error;
-    return existing;
-  }
-
+  if (error) throw error;
   return data.user;
+}
+
+function generateAdminId(firstName, lastName) {
+  return (
+    (firstName?.[0] ?? 'A') +
+    (lastName?.[0] ?? 'A')
+  ).toUpperCase() + '-' + Date.now();
 }
 
 async function main() {
@@ -43,43 +41,96 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 
-  const adminUser = await ensureUser(supabaseAdmin, {
+  // ✅ Clean DB tables first
+  console.log('🧹 Cleaning existing data...');
+  await prisma.education.deleteMany({});
+  await prisma.profile.deleteMany({});
+
+  // ✅ Clean Supabase auth users
+  console.log('🗑️  Cleaning auth users...');
+  const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+  if (listError) throw listError;
+
+  for (const user of users) {
+    await supabaseAdmin.auth.admin.deleteUser(user.id);
+    console.log(`   Deleted: ${user.email}`);
+  }
+
+  // ✅ Create auth users
+  // Note: Supabase trigger will auto-insert a minimal row into profiles (id + email only)
+  // We then upsert below to fill in the rest of the fields
+  console.log('👤 Creating auth users...');
+  const adminUser = await createUser(supabaseAdmin, {
     email: adminEmail,
     password: adminPassword,
     user_metadata: { fullName: 'Super Admin' },
   });
-  const freelancerUser = await ensureUser(supabaseAdmin, {
+  console.log(`   Admin created: ${adminUser.id}`);
+
+  const freelancerUser = await createUser(supabaseAdmin, {
     email: freelancerEmail,
     password: freelancerPassword,
     user_metadata: { fullName: 'Seeded Freelancer' },
   });
+  console.log(`   Freelancer created: ${freelancerUser.id}`);
 
-  // Upsert roles in public.profiles (table created by migration + trigger)
+  // ✅ ADMIN PROFILE — upsert so it works whether trigger inserted a row or not
+  console.log('📝 Upserting admin profile...');
   await prisma.profile.upsert({
     where: { id: adminUser.id },
     create: {
       id: adminUser.id,
+      firstName: 'Super',
+      lastName: 'Admin',
       fullName: 'Super Admin',
-      role: 'admin',
+      email: adminEmail,
+      role: 'ADMIN',
       isSuperadmin: true,
+      verificationStatus: 'APPROVED',
+      adminId: generateAdminId('Super', 'Admin'),
+      region: 'BAYERN',
     },
-    update: { role: 'admin', isSuperadmin: true },
+    update: {
+      firstName: 'Super',
+      lastName: 'Admin',
+      fullName: 'Super Admin',
+      email: adminEmail,
+      role: 'ADMIN',
+      isSuperadmin: true,
+      verificationStatus: 'APPROVED',
+      adminId: generateAdminId('Super', 'Admin'),
+      region: 'BAYERN',
+    },
   });
 
+  // ✅ FREELANCER PROFILE
+  console.log('📝 Upserting freelancer profile...');
   await prisma.profile.upsert({
     where: { id: freelancerUser.id },
     create: {
       id: freelancerUser.id,
+      firstName: 'Seeded',
+      lastName: 'Freelancer',
       fullName: 'Seeded Freelancer',
-      role: 'freelancer',
+      email: freelancerEmail,
+      role: 'FREELANCER',
       isSuperadmin: false,
+      verificationStatus: 'APPROVED',
     },
-    update: { role: 'freelancer', isSuperadmin: false },
+    update: {
+      firstName: 'Seeded',
+      lastName: 'Freelancer',
+      fullName: 'Seeded Freelancer',
+      email: freelancerEmail,
+      role: 'FREELANCER',
+      isSuperadmin: false,
+      verificationStatus: 'APPROVED',
+    },
   });
 
-  console.log('Seed complete.');
-  console.log(`Admin: ${adminEmail}`);
-  console.log(`Freelancer: ${freelancerEmail}`);
+  console.log('\n✅ Seed complete.');
+  console.log(`   Admin:      ${adminEmail}`);
+  console.log(`   Freelancer: ${freelancerEmail}`);
 }
 
 main()
@@ -90,4 +141,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
