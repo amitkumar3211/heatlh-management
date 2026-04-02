@@ -24,8 +24,8 @@ export async function GET(request) {
     where: { id: auth.user.id },
     select: { role: true, isSuperadmin: true },
   });
-  const role = profile?.role ?? 'freelancer';
-  const redirectTo = role === 'admin' ? '/admin/dashboard' : '/freelancer/dashboard';
+  const role = profile?.role ?? 'FREELANCER';
+  const redirectTo = role === 'ADMIN' ? '/admin/dashboard' : '/freelancer/dashboard';
 
   return NextResponse.json({
     ok: true,

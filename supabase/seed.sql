@@ -15,8 +15,8 @@
 insert into public.profiles (id, full_name, role, is_superadmin)
 select
   u.id,
-  coalesce(u.raw_user_meta_data->>'fullName', u.raw_user_meta_data->>'full_name', 'Admin'),
-  'admin',
+  coalesce(u.raw_user_meta_data->>'fullName', u.raw_user_meta_data->>'full_name', 'ADMIN'),
+  'ADMIN',
   true
 from auth.users u
 where u.email = 'admin@example.com'
@@ -30,8 +30,8 @@ set role = excluded.role,
 insert into public.profiles (id, full_name, role, is_superadmin)
 select
   u.id,
-  coalesce(u.raw_user_meta_data->>'fullName', u.raw_user_meta_data->>'full_name', 'Freelancer'),
-  'freelancer',
+  coalesce(u.raw_user_meta_data->>'fullName', u.raw_user_meta_data->>'full_name', 'FREELANCER'),
+  'FREELANCER',
   false
 from auth.users u
 where u.email = 'freelancer@example.com'

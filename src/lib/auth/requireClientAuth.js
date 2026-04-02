@@ -17,7 +17,7 @@ export function useRequireClientAuth({ role }) {
     }
 
     if (role && roleInStore && roleInStore !== role) {
-      window.location.href = roleInStore === 'admin' ? '/admin/dashboard' : '/freelancer/dashboard';
+      window.location.href = roleInStore === 'ADMIN' ? '/admin/dashboard' : '/freelancer/dashboard';
     }
   }, [hydrated, isAuthenticated, roleInStore, role]);
 }

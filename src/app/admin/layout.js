@@ -53,7 +53,7 @@ const ProfileIcon = () => (
 export default function AdminLayout({ children }) {
   const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  useRequireClientAuth({ role: 'admin' });
+  useRequireClientAuth({ role: 'ADMIN' });
 
   const handleLogout = async () => {
     await logoutViaApi();

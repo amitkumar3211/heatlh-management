@@ -55,7 +55,7 @@ const ProfileIcon = () => (
 export default function FreelancerLayout({ children }) {
   const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  useRequireClientAuth({ role: 'freelancer' });
+  useRequireClientAuth({ role: 'FREELANCER' });
 
   const handleLogout = async () => {
     await logoutViaApi();

@@ -3,7 +3,7 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
-  role text not null default 'freelancer' check (role in ('freelancer', 'admin')),
+  role text not null default 'FREELANCER' check (role in ('FREELANCER', 'ADMIN')),
   is_superadmin boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -40,7 +40,7 @@ begin
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'fullName', new.raw_user_meta_data->>'full_name'),
-    'freelancer',
+    'FREELANCER',
     false
   )
   on conflict (id) do update

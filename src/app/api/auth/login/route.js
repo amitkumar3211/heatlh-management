@@ -49,7 +49,7 @@ export async function POST(request) {
       );
     }
 
-    let role = 'freelancer';
+    let role = 'FREELANCER';
     let is_superadmin = false;
     const profile = await prisma.profile.findUnique({
       where: { id: data.user.id },
@@ -58,7 +58,7 @@ export async function POST(request) {
     if (profile?.role) role = profile.role;
     if (typeof profile?.isSuperadmin === 'boolean') is_superadmin = profile.isSuperadmin;
 
-    const redirectTo = role === 'admin' ? '/admin/dashboard' : '/freelancer/dashboard';
+    const redirectTo = role === 'ADMIN' ? '/admin/dashboard' : '/freelancer/dashboard';
 
     const res = NextResponse.json({
       ok: true,
