@@ -1,35 +1,39 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  token: null,
+  hydrated: false,
+  isAuthenticated: false,
   role: null,
   is_superadmin: false,
-  hydrated: false,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    hydrateFromStorage(state, action) {
-      state.token = action.payload?.token ?? null;
+    markHydrated(state) {
       state.hydrated = true;
     },
     setAuth(state, action) {
-      state.token = action.payload?.token ?? null;
+      state.hydrated = true;
+      state.isAuthenticated = true;
       state.role = action.payload?.role ?? null;
       state.is_superadmin = Boolean(action.payload?.is_superadmin);
-      state.hydrated = true;
     },
-    clearAuth(state) {
-      state.token = null;
+    setUnauthenticated(state) {
+      state.hydrated = true;
+      state.isAuthenticated = false;
       state.role = null;
       state.is_superadmin = false;
+    },
+    clearAuth(state) {
       state.hydrated = true;
+      state.isAuthenticated = false;
+      state.role = null;
+      state.is_superadmin = false;
     },
   },
 });
 
-export const { hydrateFromStorage, setAuth, clearAuth } = authSlice.actions;
+export const { markHydrated, setAuth, setUnauthenticated, clearAuth } = authSlice.actions;
 export default authSlice.reducer;
-

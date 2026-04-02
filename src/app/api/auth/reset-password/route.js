@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { setAuthCookies } from '@/lib/auth/cookies';
 
 export async function POST(request) {
   try {
@@ -52,12 +53,14 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: updateError.message }, { status: 400 });
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
       message: 'Password updated',
-      access_token: session?.access_token ?? null,
-      refresh_token: session?.refresh_token ?? null,
     });
+    if (session?.access_token && session?.refresh_token) {
+      setAuthCookies(res, session);
+    }
+    return res;
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? 'Server error' },

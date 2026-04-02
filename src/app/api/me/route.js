@@ -10,7 +10,12 @@ export async function GET(request) {
 
   if (!isEmailVerified(auth.user)) {
     return NextResponse.json(
-      { ok: false, error: 'Email not verified' },
+      {
+        ok: false,
+        error: 'Email not verified',
+        needsVerification: true,
+        email: auth.user.email ?? null,
+      },
       { status: 403 },
     );
   }
@@ -20,7 +25,7 @@ export async function GET(request) {
     select: { role: true, isSuperadmin: true },
   });
   const role = profile?.role ?? 'freelancer';
-  const redirectTo = role === 'admin' ? '/admin/dashboard' : '/freelancer/profile';
+  const redirectTo = role === 'admin' ? '/admin/dashboard' : '/freelancer/dashboard';
 
   return NextResponse.json({
     ok: true,

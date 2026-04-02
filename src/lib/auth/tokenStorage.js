@@ -1,18 +1,16 @@
-const ACCESS_TOKEN_KEY = 'access_token';
+/**
+ * Access token is stored in httpOnly cookies (set by /api/auth/login).
+ * Client code must not read the token; use fetch(..., { credentials: 'same-origin' }).
+ */
 
-export function getAccessToken() {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
-}
-
-export function setAccessToken(token) {
+export async function logoutViaApi() {
   if (typeof window === 'undefined') return;
-  if (!token) return;
-  window.localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    });
+  } catch {
+    // ignore
+  }
 }
-
-export function clearAccessToken() {
-  if (typeof window === 'undefined') return;
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-}
-

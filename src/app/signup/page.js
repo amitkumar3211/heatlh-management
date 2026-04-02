@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
-import { getAccessToken } from '@/lib/auth/tokenStorage';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -21,17 +20,12 @@ export default function SignupPage() {
   };
 
   useEffect(() => {
-    // If already logged in, redirect away from signup.
-    const token = getAccessToken();
-    if (!token) return;
     (async () => {
       try {
-        const res = await fetch('/api/me', {
-          headers: { authorization: `Bearer ${token}` },
-        });
+        const res = await fetch('/api/me', { credentials: 'same-origin' });
         const json = await res.json();
         if (!res.ok || !json.ok) return;
-        window.location.href = json.redirectTo ?? '/freelancer/profile';
+        window.location.href = json.redirectTo ?? '/freelancer/dashboard';
       } catch {
         // ignore
       }

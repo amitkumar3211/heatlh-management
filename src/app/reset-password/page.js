@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
-import { setAccessToken } from '@/lib/auth/tokenStorage';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -57,13 +56,13 @@ export default function ResetPasswordPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
+        credentials: 'same-origin',
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
         showToast(json.error ?? 'Reset failed', 'error');
         return;
       }
-      if (json.access_token) setAccessToken(json.access_token);
       showToast('Password reset successfully!', 'success');
       setTimeout(() => {
         window.location.href = '/login';

@@ -3,28 +3,29 @@
 import { Provider } from 'react-redux';
 import { store } from '@/store/store';
 import { useEffect } from 'react';
-import { hydrateFromStorage, setAuth, clearAuth } from '@/store/authSlice';
-import { getAccessToken } from '@/lib/auth/tokenStorage';
+import { clearAuth, markHydrated, setAuth, setUnauthenticated } from '@/store/authSlice';
 
 function BootstrapAuth() {
   useEffect(() => {
-    const token = getAccessToken();
-    store.dispatch(hydrateFromStorage({ token }));
-
-    if (!token) return;
     (async () => {
       try {
-        const res = await fetch('/api/me', {
-          headers: { authorization: `Bearer ${token}` },
-        });
+        const res = await fetch('/api/me', { credentials: 'same-origin' });
         const json = await res.json();
-        if (!res.ok || !json.ok) {
+        if (res.status === 401) {
           store.dispatch(clearAuth());
           return;
         }
-        store.dispatch(setAuth({ token, role: json.role, is_superadmin: json.is_superadmin }));
+        if (res.status === 403 && json?.needsVerification) {
+          store.dispatch(setUnauthenticated());
+          return;
+        }
+        if (!res.ok || !json.ok) {
+          store.dispatch(markHydrated());
+          return;
+        }
+        store.dispatch(setAuth({ role: json.role, is_superadmin: json.is_superadmin }));
       } catch {
-        // ignore - keep token but marked hydrated
+        store.dispatch(markHydrated());
       }
     })();
   }, []);
@@ -40,4 +41,3 @@ export default function Providers({ children }) {
     </Provider>
   );
 }
-

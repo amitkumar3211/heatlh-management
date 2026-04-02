@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getAccessToken } from '@/lib/auth/tokenStorage';
 
 const EditIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -43,16 +42,9 @@ export default function ProfilePage() {
     let cancelled = false;
     (async () => {
       try {
-        const token = getAccessToken();
-        if (!token) {
-          window.location.href = '/login?error=unauthorized';
-          return;
-        }
-
-        // First: verify email + get redirect target
         const res = await fetch('/api/me', {
           method: 'GET',
-          headers: { authorization: `Bearer ${token}` },
+          credentials: 'same-origin',
         });
         const json = await res.json();
         if (cancelled) return;
@@ -63,7 +55,8 @@ export default function ProfilePage() {
             return;
           }
           if (res.status === 403) {
-            window.localStorage.setItem('pending_verify_email', json?.user?.email ?? '');
+            const em = json?.email ?? '';
+            if (em) window.localStorage.setItem('pending_verify_email', em);
             window.location.href = '/verify-email';
             return;
           }
@@ -71,9 +64,8 @@ export default function ProfilePage() {
           return;
         }
 
-        // Then: fetch profile data using token-only API
         const profileRes = await fetch('/api/profile', {
-          headers: { authorization: `Bearer ${token}` },
+          credentials: 'same-origin',
         });
         const profileJson = await profileRes.json();
         if (cancelled) return;

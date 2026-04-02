@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Toast from '@/components/Toast';
-import { getAccessToken, setAccessToken, clearAccessToken } from '@/lib/auth/tokenStorage';
+import { logoutViaApi } from '@/lib/auth/tokenStorage';
 import { useDispatch } from 'react-redux';
 import { setAuth, clearAuth } from '@/store/authSlice';
 
@@ -21,34 +21,42 @@ export default function LoginPage() {
   };
 
   useEffect(() => {
-    // If already logged in, redirect to role-based dashboard.
-    const token = getAccessToken();
-    if (!token) return;
-
     (async () => {
       try {
-        const res = await fetch('/api/me', {
-          headers: { authorization: `Bearer ${token}` },
-        });
+        const res = await fetch('/api/me', { credentials: 'same-origin' });
         const json = await res.json();
-        if (!res.ok || !json.ok) return;
-        window.location.href = json.redirectTo ?? '/freelancer/profile';
+        if (res.status === 401) {
+          dispatch(clearAuth());
+          return;
+        }
+        if (res.status === 403 && json?.needsVerification) {
+          const em = json.email || '';
+          if (em) window.localStorage.setItem('pending_verify_email', em);
+          window.location.href = em
+            ? `/verify-email?email=${encodeURIComponent(em)}`
+            : '/verify-email';
+          return;
+        }
+        if (res.ok && json.ok) {
+          window.location.href = json.redirectTo ?? '/freelancer/dashboard';
+        }
       } catch {
         // ignore
       }
     })();
-  }, []);
+  }, [dispatch]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      clearAccessToken();
+      await logoutViaApi();
       dispatch(clearAuth());
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'same-origin',
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
@@ -61,28 +69,9 @@ export default function LoginPage() {
         return;
       }
 
-      if (json.access_token) setAccessToken(json.access_token);
+      dispatch(setAuth({ role: json.role, is_superadmin: json.is_superadmin }));
       showToast('Login successful!', 'success');
-      setTimeout(async () => {
-        try {
-          const token = json.access_token ?? getAccessToken();
-          const meRes = await fetch('/api/me', {
-            headers: { authorization: `Bearer ${token}` },
-          });
-          const meJson = await meRes.json();
-          if (meRes.status === 403) {
-            window.localStorage.setItem('pending_verify_email', email);
-            window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
-            return;
-          }
-          if (meRes.ok && meJson?.ok) {
-            dispatch(setAuth({ token, role: meJson.role, is_superadmin: meJson.is_superadmin }));
-          }
-          window.location.href = meJson.redirectTo ?? json.redirectTo ?? '/freelancer/profile';
-        } catch {
-          window.location.href = json.redirectTo ?? '/freelancer/profile';
-        }
-      }, 200);
+      window.location.href = json.redirectTo ?? '/freelancer/dashboard';
     } catch (err) {
       showToast(err?.message ?? 'Login failed', 'error');
     } finally {

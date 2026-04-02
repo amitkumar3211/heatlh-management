@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
+import { setAuthCookies } from '@/lib/auth/cookies';
 
 export async function POST(request) {
   try {
@@ -41,6 +42,13 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'Missing session' }, { status: 500 });
     }
 
+    if (!data.user?.email_confirmed_at) {
+      return NextResponse.json(
+        { ok: false, needsVerification: true, email },
+        { status: 403 },
+      );
+    }
+
     let role = 'freelancer';
     let is_superadmin = false;
     const profile = await prisma.profile.findUnique({
@@ -50,17 +58,17 @@ export async function POST(request) {
     if (profile?.role) role = profile.role;
     if (typeof profile?.isSuperadmin === 'boolean') is_superadmin = profile.isSuperadmin;
 
-    const redirectTo = role === 'admin' ? '/admin/dashboard' : '/freelancer/profile';
+    const redirectTo = role === 'admin' ? '/admin/dashboard' : '/freelancer/dashboard';
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       ok: true,
       user: data.user,
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
       role,
       is_superadmin,
       redirectTo,
     });
+    setAuthCookies(res, session);
+    return res;
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e?.message ?? 'Server error' },

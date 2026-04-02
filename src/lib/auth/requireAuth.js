@@ -1,15 +1,19 @@
+import { cookies } from 'next/headers';
+import { ACCESS_TOKEN_COOKIE } from './cookies';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
 
-export function getTokenFromRequest(request) {
+export async function getTokenFromRequest(request) {
   const header = request.headers.get('authorization');
   if (header && header.toLowerCase().startsWith('bearer ')) {
     return header.slice('bearer '.length).trim();
   }
-  return null;
+
+  const cookieStore = await cookies();
+  return cookieStore.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
 }
 
 export async function requireAuth(request) {
-  const token = getTokenFromRequest(request);
+  const token = await getTokenFromRequest(request);
   if (!token) {
     return { ok: false, status: 401, error: 'Missing access token' };
   }

@@ -2,7 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useDispatch } from 'react-redux';
 import { useRequireClientAuth } from '@/lib/auth/requireClientAuth';
+import { clearAuth } from '@/store/authSlice';
+import { logoutViaApi } from '@/lib/auth/tokenStorage';
 
 const DashboardIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -50,8 +53,15 @@ const ProfileIcon = () => (
 );
 
 export default function FreelancerLayout({ children }) {
+  const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   useRequireClientAuth({ role: 'freelancer' });
+
+  const handleLogout = async () => {
+    await logoutViaApi();
+    dispatch(clearAuth());
+    window.location.href = '/login';
+  };
 
   return (
     <div className="flex h-screen bg-white">
@@ -128,11 +138,18 @@ export default function FreelancerLayout({ children }) {
 
         {/* Footer */}
         <div className="border-t border-gray-800 px-4 py-4 space-y-2">
-          <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-300 hover:bg-green-600 hover:text-white transition-colors duration-200 flex items-center gap-3">
+          <Link
+            href="/freelancer/profile"
+            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-300 hover:bg-green-600 hover:text-white transition-colors duration-200 flex items-center gap-3"
+          >
             <ProfileIcon />
             {sidebarOpen && 'Profile'}
-          </button>
-          <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200 flex items-center gap-3">
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-300 hover:bg-red-600 hover:text-white transition-colors duration-200 flex items-center gap-3"
+          >
             <LogoutIcon />
             {sidebarOpen && 'Logout'}
           </button>
