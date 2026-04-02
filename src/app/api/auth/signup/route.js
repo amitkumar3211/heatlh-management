@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request) {
   try {
@@ -7,6 +8,8 @@ export async function POST(request) {
     const email = String(body.email ?? '').trim();
     const password = String(body.password ?? '');
     const fullName = String(body.fullName ?? '').trim();
+    const firstName = String(body.firstName ?? '').trim();
+    const lastName  = String(body.lastName  ?? '').trim();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -24,7 +27,7 @@ export async function POST(request) {
       },
     });
 
-    if (error) {
+    if (error || !data.user) {
       const msg = error.message?.toLowerCase?.() ?? '';
       if (msg.includes('rate limit') || msg.includes('too many requests')) {
         return NextResponse.json(
@@ -38,6 +41,20 @@ export async function POST(request) {
       }
       return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
     }
+
+    // Create the profile row immediately so it exists when the user first logs in
+    await prisma.profile.upsert({
+      where: { id: data.user.id },
+      create: {
+        id: data.user.id,
+        email,
+        fullName: fullName || null,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        role: 'FREELANCER',
+      },
+      update: {},
+    });
 
     return NextResponse.json({
       ok: true,

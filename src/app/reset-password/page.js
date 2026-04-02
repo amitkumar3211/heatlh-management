@@ -75,14 +75,14 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
       {toast && <Toast message={toast.message} type={toast.type} />}
 
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-block p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl mb-4">
+            <div className="inline-block p-3 bg-linear-to-br from-green-400 to-green-600 rounded-xl mb-4">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
               </svg>

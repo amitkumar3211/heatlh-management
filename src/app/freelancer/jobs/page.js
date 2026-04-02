@@ -1,17 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 
 const SearchIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
     <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"></path>
-  </svg>
-);
-
-const FilterIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 016 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clipRule="evenodd"></path>
   </svg>
 );
 
@@ -27,16 +20,25 @@ const EuroIcon = () => (
   </svg>
 );
 
+const REGIONS = [
+  { key: 'all',                label: 'All Regions' },
+  { key: 'NORD_WEST',          label: 'North West' },
+  { key: 'BAYERN',             label: 'Bayern' },
+  { key: 'BERLIN_BRANDENBURG', label: 'Berlin / Brandenburg' },
+  { key: 'SACHSEN',            label: 'Sachsen' },
+];
+
 export default function JobsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('available');
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterRegion, setFilterRegion] = useState('all');
 
   const jobs = [
     {
       id: 1,
       orderNum: 'ORD-2026-050',
       title: 'Fresh Market Product Evaluation',
-      location: 'North Region',
+      region: 'NORD_WEST',
       amount: '€150',
       deadline: '2026-03-10',
       status: 'available',
@@ -46,7 +48,7 @@ export default function JobsPage() {
       id: 2,
       orderNum: 'ORD-2026-049',
       title: 'Customer Feedback Survey',
-      location: 'North Region',
+      region: 'NORD_WEST',
       amount: '€120',
       deadline: '2026-03-08',
       status: 'applied',
@@ -56,7 +58,7 @@ export default function JobsPage() {
       id: 3,
       orderNum: 'ORD-2026-048',
       title: 'Marketing Campaign Review',
-      location: 'North Region',
+      region: 'BAYERN',
       amount: '€200',
       deadline: '2026-03-12',
       status: 'assigned',
@@ -66,7 +68,7 @@ export default function JobsPage() {
       id: 4,
       orderNum: 'ORD-2026-047',
       title: 'Tech Product Testing',
-      location: 'East Region',
+      region: 'BERLIN_BRANDENBURG',
       amount: '€180',
       deadline: '2026-03-15',
       status: 'unavailable',
@@ -76,7 +78,7 @@ export default function JobsPage() {
       id: 5,
       orderNum: 'ORD-2026-046',
       title: 'Retail Store Audit',
-      location: 'North Region',
+      region: 'SACHSEN',
       amount: '€160',
       deadline: '2026-03-11',
       status: 'available',
@@ -85,10 +87,11 @@ export default function JobsPage() {
   ];
 
   const filteredJobs = jobs.filter((job) => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch  = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.orderNum.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || job.status === filterStatus;
-    return matchesSearch && matchesFilter;
+    const matchesStatus  = filterStatus === 'all' || job.status === filterStatus;
+    const matchesRegion  = filterRegion === 'all' || job.region === filterRegion;
+    return matchesSearch && matchesStatus && matchesRegion;
   });
 
   const getStatusColor = (status) => {
@@ -137,7 +140,7 @@ export default function JobsPage() {
         </Link> */}
       </div>
 
-      {/* Search and Filter */}
+      {/* Search and Filters */}
       <div className="mb-6 flex gap-4 flex-col md:flex-row">
         <div className="flex-1 relative">
           <SearchIcon />
@@ -150,11 +153,20 @@ export default function JobsPage() {
           />
         </div>
         <select
+          value={filterRegion}
+          onChange={(e) => setFilterRegion(e.target.value)}
+          className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none"
+        >
+          {REGIONS.map((r) => (
+            <option key={r.key} value={r.key}>{r.label}</option>
+          ))}
+        </select>
+        <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
           className="px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none"
         >
-          <option value="all">All Jobs</option>
+          <option value="all">All Statuses</option>
           <option value="available">Available</option>
           <option value="applied">Applied</option>
           <option value="assigned">Assigned</option>
@@ -185,7 +197,7 @@ export default function JobsPage() {
             <div className="space-y-3 mb-6 text-sm">
               <div className="flex items-center gap-2 text-gray-700">
                 <MapIcon />
-                <span>{job.location}</span>
+                <span>{REGIONS.find((r) => r.key === job.region)?.label ?? job.region}</span>
               </div>
               <div className="flex items-center gap-2 text-gray-700">
                 <EuroIcon />

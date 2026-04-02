@@ -5,6 +5,8 @@ import Toast from '@/components/Toast';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     fullName: '',
     email: '',
     password: '',
@@ -59,6 +61,8 @@ export default function SignupPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           fullName: formData.fullName,
           email: formData.email,
           password: formData.password,
@@ -82,14 +86,14 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
       {toast && <Toast message={toast.message} type={toast.type} />}
 
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="inline-block p-3 bg-gradient-to-br from-green-400 to-green-600 rounded-xl mb-4">
+            <div className="inline-block p-3 bg-linear-to-br from-green-400 to-green-600 rounded-xl mb-4">
               <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path>
                 <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0015.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"></path>
@@ -101,6 +105,40 @@ export default function SignupPage() {
 
           {/* Form */}
           <form onSubmit={handleSignup} className="space-y-4">
+            {/* First & Last Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-semibold text-gray-800 mb-2">
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="John"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-semibold text-gray-800 mb-2">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Doe"
+                  className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+                  required
+                />
+              </div>
+            </div>
+
             {/* Full Name */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-semibold text-gray-800 mb-2">
@@ -196,7 +234,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 mt-6"
+              className="w-full bg-linear-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 mt-6"
             >
               {isLoading ? 'Creating...' : 'Create Account'}
             </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const CheckCircleIcon = () => (
   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -27,6 +27,31 @@ const FileIcon = () => (
 );
 
 export default function FreelancerDashboard() {
+  const [profileName, setProfileName] = useState('');
+  const [memberSince, setMemberSince] = useState('');
+
+  useEffect(() => {
+    fetch('/api/profile', { credentials: 'same-origin' })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.ok && json.profile) {
+          const p = json.profile;
+          setProfileName(
+            p.fullName ||
+            `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim() ||
+            p.email ||
+            ''
+          );
+          if (p.createdAt) {
+            setMemberSince(
+              new Date(p.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            );
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-white p-8">
       {/* Header */}
@@ -34,7 +59,7 @@ export default function FreelancerDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard</h1>
-            <p className="text-gray-600">Welcome back, Sarah Ahmed!</p>
+            <p className="text-gray-600">Welcome back{profileName ? `, ${profileName}` : ''}!</p>
           </div>
           <div className="flex items-center gap-4">
             {/* <Link href="/freelancer/dashboard/edit">
@@ -45,7 +70,7 @@ export default function FreelancerDashboard() {
             </Link> */}
             <div className="text-right">
               <p className="text-sm text-gray-600 mb-1">Member Since</p>
-              <p className="text-xl font-semibold text-gray-900">January 2024</p>
+              <p className="text-xl font-semibold text-gray-900">{memberSince || '—'}</p>
             </div>
           </div>
         </div>
@@ -91,7 +116,7 @@ export default function FreelancerDashboard() {
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-gray-600 text-sm font-medium">{stat.label}</h3>
-                <div className={`bg-gradient-to-br ${stat.color} p-3 rounded-lg text-white`}>
+                <div className={`bg-linear-to-br ${stat.color} p-3 rounded-lg text-white`}>
                   <Icon />
                 </div>
               </div>
