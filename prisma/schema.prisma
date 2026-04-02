@@ -8,14 +8,86 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+//////////////////////
+// ENUMS
+//////////////////////
+
+enum Role {
+  FREELANCER
+  ADMIN
+}
+
+enum Region {
+  NORD_WEST
+  BAYERN
+  BERLIN_BRANDENBURG
+  SACHSEN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+//////////////////////
+// PROFILE
+//////////////////////
+
 model Profile {
   id           String   @id @db.Uuid
-  fullName     String?  @map("full_name")
-  role         String   @default("freelancer")
+  role         Role     @default(FREELANCER)
   isSuperadmin Boolean  @default(false) @map("is_superadmin")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  // 👤 Basic Info
+  firstName String? @map("first_name")
+  lastName  String? @map("last_name")
+  fullName  String? @map("full_name")
+  email     String?
+  phone     String?
+
+  profileImage String? @map("profile_image")
+
+  // 🆔 Admin ID (only for admins)
+  adminId String? @unique @map("admin_id")
+
+  // ✅ Admin Verification
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+
+  // 🌍 Region (used for filtering jobs, profits, etc.)
+  region Region?
+
+  // 📅 Freelancer Info
+  dateOfBirth      DateTime? @map("date_of_birth")
+  primaryAddress   String?   @map("primary_address")
+  secondaryAddress String?   @map("secondary_address")
+  languages        Json?     // ["English", "German"]
+
+  // 🔗 Relations
+  educations Education[]
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("profiles")
+}
+
+//////////////////////
+// EDUCATION (MULTIPLE)
+//////////////////////
+
+model Education {
+  id             String  @id @default(uuid())
+  profileId      String  @map("profile_id")
+
+  degree         String? // Bachelor, Master, Diploma
+  fieldOfStudy   String? @map("field_of_study")
+  specialization String? // Ergonomie, Nutrition, etc.
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("educations")
 }
 
