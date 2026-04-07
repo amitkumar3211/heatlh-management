@@ -2,159 +2,175 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSelector } from 'react-redux';
 
-const BackIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd"></path>
-  </svg>
-);
-
-const SaveIcon = () => (
-  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"></path>
-  </svg>
-);
+const REGIONS = [
+  { value: 'NORD_WEST',          label: 'North West' },
+  { value: 'BAYERN',             label: 'Bayern' },
+  { value: 'BERLIN_BRANDENBURG', label: 'Berlin / Brandenburg' },
+  { value: 'SACHSEN',            label: 'Sachsen' },
+];
 
 export default function AddFreelancerPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    specialization: '',
-    region: '',
-    status: 'Active',
-    bio: '',
-  });
-
-  const [message, setMessage] = useState('');
+  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', region: '', role: 'FREELANCER' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const isSuperadmin = useSelector((state) => state.auth.is_superadmin);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setForm((p) => ({ ...p, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage('Freelancer added successfully!');
-    setTimeout(() => {
-      router.push('/admin/freelancers');
-    }, 2000);
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/freelancers', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) { setError(json.error ?? 'Failed to create freelancer.'); return; }
+      setSuccess(true);
+      setTimeout(() => router.push('/admin/freelancers'), 1800);
+    } catch (e) {
+      setError(e?.message ?? 'Failed to create freelancer.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-white p-8">
-      {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6 transition-colors font-semibold"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors font-semibold"
         >
-          <BackIcon />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to Freelancers
         </button>
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Add New Freelancer</h1>
-        <p className="text-gray-600">Fill in the details to onboard a new freelancer</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Add Freelancer</h1>
+        <p className="text-gray-600">Create a new freelancer account — a temporary password will be auto-generated and emailed</p>
       </div>
 
-      {message && (
-        <div className="mb-8 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg font-semibold">
-          ✓ {message}
+      {success && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-300 text-green-700 rounded-lg font-medium">
+          ✓ Freelancer created successfully! Welcome email sent. Redirecting…
         </div>
       )}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{error}</div>
+      )}
 
-      {/* Form Container */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="bg-white rounded-lg border-2 border-gray-200 p-8 max-w-2xl">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">Full Name *</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">First Name *</label>
               <input
                 type="text"
-                name="name"
-                value={formData.name}
+                name="firstName"
+                value={form.firstName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-green-600 focus:outline-none"
-                placeholder="Enter full name"
+                placeholder="John"
                 required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none"
               />
             </div>
-
             <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">Email *</label>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Last Name *</label>
               <input
-                type="email"
-                name="email"
-                value={formData.email}
+                type="text"
+                name="lastName"
+                value={form.lastName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-green-600 focus:outline-none"
-                placeholder="Enter email"
+                placeholder="Doe"
                 required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">Specialization</label>
-              <input
-                type="text"
-                name="specialization"
-                value={formData.specialization}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-green-600 focus:outline-none"
-                placeholder="e.g., Market Research, UI Design"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">Region</label>
-              <input
-                type="text"
-                name="region"
-                value={formData.region}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-green-600 focus:outline-none"
-                placeholder="Enter region"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-800 mb-3">Status</label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-green-600 focus:outline-none"
-              >
-                <option value="Active">Active</option>
-                <option value="Pending Approval">Pending Approval</option>
-                <option value="Inactive">Inactive</option>
-              </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-3">Bio</label>
-            <textarea
-              name="bio"
-              value={formData.bio}
+            <label className="block text-sm font-semibold text-gray-800 mb-2">Email Address *</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
               onChange={handleChange}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-green-600 focus:outline-none"
-              placeholder="Enter bio"
-              rows="4"
+              placeholder="john@example.com"
+              required
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none"
             />
           </div>
 
-          <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className="block text-sm font-semibold text-gray-800 mb-2">Region</label>
+              <select
+                name="region"
+                value={form.region}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none bg-white"
+              >
+                <option value="">— Select region —</option>
+                {REGIONS.map((r) => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))}
+              </select>
+            </div>
+            {isSuperadmin && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-800 mb-2">Role</label>
+                <select
+                  name="role"
+                  value={form.role}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none bg-white"
+                >
+                  <option value="FREELANCER">Freelancer</option>
+                  <option value="ADMIN">Admin</option>
+                </select>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-700">
+              <strong>Auto-generated password</strong> — A secure temporary password will be created automatically and sent to the freelancer&apos;s email address.
+            </p>
+          </div>
+
+          <div className="flex gap-4 pt-2">
             <button
               type="submit"
-              className="flex-1 bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+              disabled={saving || success}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <SaveIcon />
-              Add Freelancer
+              {saving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Creating & Sending Email…
+                </>
+              ) : 'Add Freelancer'}
             </button>
             <button
               type="button"
               onClick={() => router.back()}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors"
+              disabled={saving}
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg transition-colors"
             >
               Cancel
             </button>

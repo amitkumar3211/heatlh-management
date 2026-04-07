@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-   "build": "prisma generate && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "db:migrate:supabase": "prisma db execute --schema prisma/schema.prisma --file supabase/migrations/20260401000100_profiles_roles.sql",
@@ -19,6 +19,7 @@
     "@reduxjs/toolkit": "^2.11.2",
     "@supabase/supabase-js": "^2.101.1",
     "next": "16.1.6",
+    "nodemailer": "^8.0.4",
     "prisma": "^5.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",

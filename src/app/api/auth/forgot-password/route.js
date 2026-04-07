@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient, getPasswordResetRedirectUrl } from '@/lib/supabase/server';
+import { createSupabaseServiceClient } from '@/lib/supabase/server';
+import { sendResetPasswordEmail } from '@/lib/mailer';
 
 export async function POST(request) {
   try {
@@ -10,16 +11,32 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, error: 'Email is required' }, { status: 400 });
     }
 
-    const supabase = createSupabaseServerClient();
-    const redirectTo = getPasswordResetRedirectUrl(request.url);
+    const supabase = createSupabaseServiceClient();
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    const redirectTo =
+      process.env.PASSWORD_RESET_REDIRECT_URL ??
+      `${new URL(request.url).origin}/reset-password`;
+
+    const { data, error } = await supabase.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: { redirectTo },
+    });
+
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+      // Don't reveal whether the email exists; still return success to client
+      console.error('[forgot-password] generateLink error:', error.message);
+      return NextResponse.json({ ok: true, message: 'If the email exists, a reset link was sent.' });
     }
 
-    return NextResponse.json({ ok: true, message: 'Reset link sent (if the email exists).' });
+    const resetUrl = data?.properties?.action_link;
+    if (resetUrl) {
+      await sendResetPasswordEmail(email, resetUrl);
+    }
+
+    return NextResponse.json({ ok: true, message: 'If the email exists, a reset link was sent.' });
   } catch (e) {
+    console.error('[forgot-password] error:', e);
     return NextResponse.json(
       { ok: false, error: e?.message ?? 'Server error' },
       { status: 500 },

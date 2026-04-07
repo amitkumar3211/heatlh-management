@@ -19,8 +19,21 @@ export default function VerifyEmailPage() {
   }, []);
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? window.localStorage.getItem('pending_verify_email') : '';
-    setEmail((queryEmail || stored || '').trim());
+    // Redirect already-verified/logged-in users to dashboard
+    (async () => {
+      try {
+        const res = await fetch('/api/me', { credentials: 'same-origin' });
+        const json = await res.json();
+        if (res.ok && json.ok) {
+          window.location.href = json.redirectTo ?? '/freelancer/dashboard';
+          return;
+        }
+      } catch {
+        // not logged in, stay on page
+      }
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('pending_verify_email') : '';
+      setEmail((queryEmail || stored || '').trim());
+    })();
   }, [queryEmail]);
 
   const handleResend = async () => {
@@ -62,9 +75,17 @@ export default function VerifyEmailPage() {
         <button
           onClick={handleResend}
           disabled={isLoading || !email}
-          className="mt-4 w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="mt-4 w-full bg-linear-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
         >
-          {isLoading ? 'Sending...' : 'Resend verification email'}
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Sending...
+            </span>
+          ) : 'Resend verification email'}
         </button>
 
         <div className="mt-6 text-center text-gray-700">

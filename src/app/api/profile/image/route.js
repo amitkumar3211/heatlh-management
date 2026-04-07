@@ -3,7 +3,7 @@ import { requireAuth, isEmailVerified } from '@/lib/auth/requireAuth';
 import { prisma } from '@/lib/prisma';
 import { createSupabaseServiceClient } from '@/lib/supabase/server';
 
-const BUCKET = 'profile-images';
+const BUCKET = 'icy';
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
 
@@ -54,15 +54,19 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, error: uploadError.message }, { status: 500 });
   }
 
-  const { data: { publicUrl } } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
-
-  // Append timestamp so the browser doesn't serve a stale cached version
-  const imageUrl = `${publicUrl}?t=${Date.now()}`;
-
+  // Store only the path; generate a signed URL for the immediate response
   await prisma.profile.update({
     where: { id: auth.user.id },
-    data: { profileImage: imageUrl },
+    data: { profileImage: storagePath },
   });
 
-  return NextResponse.json({ ok: true, imageUrl });
+  const { data: signedData, error: signedError } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(storagePath, 60 * 60 * 24 * 7); // 7 days
+
+  if (signedError) {
+    return NextResponse.json({ ok: false, error: signedError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true, imageUrl: signedData.signedUrl });
 }

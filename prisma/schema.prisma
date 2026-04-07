@@ -30,6 +30,12 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum AccountStatus {
+  ACTIVE
+  PENDING
+  INACTIVE
+}
+
 //////////////////////
 // PROFILE
 //////////////////////
@@ -54,6 +60,9 @@ model Profile {
   // ✅ Admin Verification
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
 
+  // 🔒 Account Status (controls login access)
+  accountStatus AccountStatus @default(PENDING) @map("account_status")
+
   // 🌍 Region (used for filtering jobs, profits, etc.)
   region Region?
 
@@ -62,6 +71,15 @@ model Profile {
   primaryAddress   String?   @map("primary_address")
   secondaryAddress String?   @map("secondary_address")
   languages        Json?     // ["English", "German"]
+
+  // 🔔 Notification Preferences
+  notifyEmail        Boolean @default(true)  @map("notify_email")
+  notifySms          Boolean @default(false) @map("notify_sms")
+  notifyJobAlerts    Boolean @default(true)  @map("notify_job_alerts")
+  notifyPayoutAlerts Boolean @default(true)  @map("notify_payout_alerts")
+
+  // 📅 Last Login (used to compute Active/Pending/Inactive status)
+  lastLoginAt DateTime? @map("last_login_at") @db.Timestamptz(6)
 
   // 🔗 Relations
   educations Education[]

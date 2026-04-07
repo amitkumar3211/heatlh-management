@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import { requireAuth, isEmailVerified } from '@/lib/auth/requireAuth';
 import { prisma } from '@/lib/prisma';
+import { createSupabaseServiceClient } from '@/lib/supabase/server';
+
+const BUCKET = 'icy';
+
+async function resolveProfileImageUrl(path) {
+  if (!path) return null;
+  // If it's already a full URL (legacy), return as-is
+  if (path.startsWith('http')) return path;
+  const supabase = createSupabaseServiceClient();
+  const { data } = await supabase.storage
+    .from(BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 7); // 7-day signed URL
+  return data?.signedUrl ?? null;
+}
 
 export async function GET(request) {
   const auth = await requireAuth(request);
@@ -63,7 +77,9 @@ export async function GET(request) {
     },
   });
 
-  return NextResponse.json({ ok: true, profile });
+  const profileImageUrl = await resolveProfileImageUrl(profile.profileImage);
+
+  return NextResponse.json({ ok: true, profile: { ...profile, profileImage: profileImageUrl } });
 }
 
 export async function PUT(request) {
@@ -87,6 +103,7 @@ export async function PUT(request) {
     dateOfBirth,
     primaryAddress,
     secondaryAddress,
+    region,
     languages,
   } = body;
 
@@ -102,6 +119,7 @@ export async function PUT(request) {
       }),
       ...(primaryAddress !== undefined && { primaryAddress }),
       ...(secondaryAddress !== undefined && { secondaryAddress }),
+      ...(region !== undefined && { region: region || null }),
       ...(languages !== undefined && { languages }),
     },
     select: {

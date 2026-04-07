@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useDispatch } from 'react-redux';
 import { useRequireClientAuth } from '@/lib/auth/requireClientAuth';
 import { clearAuth } from '@/store/authSlice';
@@ -50,10 +51,59 @@ const ProfileIcon = () => (
   </svg>
 );
 
+function Avatar({ image, name, size = 9 }) {
+  const sizeClass = `w-${size} h-${size}`;
+  return (
+    <div className={`shrink-0 ${sizeClass} rounded-full overflow-hidden border-2 border-green-500`}>
+      {image ? (
+        <Image
+          src={image}
+          alt={name || 'Admin'}
+          width={36}
+          height={36}
+          className="w-full h-full object-cover"
+          unoptimized
+        />
+      ) : (
+        <div className="w-full h-full bg-linear-to-br from-green-400 to-green-600 flex items-center justify-center font-bold text-black text-sm">
+          {name ? name.charAt(0).toUpperCase() : 'A'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminLayout({ children }) {
   const dispatch = useDispatch();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [adminName, setAdminName] = useState('');
+  const [adminImage, setAdminImage] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   useRequireClientAuth({ role: 'ADMIN' });
+
+  useEffect(() => {
+    fetch('/api/profile', { credentials: 'same-origin' })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.ok && j.profile) {
+          setAdminName(j.profile.fullName || `${j.profile.firstName ?? ''} ${j.profile.lastName ?? ''}`.trim());
+          setAdminImage(j.profile.profileImage || null);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = async () => {
     await logoutViaApi();
@@ -69,81 +119,46 @@ export default function AdminLayout({ children }) {
           sidebarOpen ? 'w-64' : 'w-20'
         } bg-black text-white transition-all duration-300 flex flex-col overflow-hidden border-r border-gray-800`}
       >
-        {/* Logo/Header */}
-        <div className="flex items-center justify-between border-b border-gray-800 px-6 py-6">
+        {/* Sidebar Header — app logo + name */}
+        <div className="flex items-center justify-between border-b border-gray-800 px-4 py-5">
           {sidebarOpen && (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center font-bold text-black">
-                A
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="shrink-0 w-8 h-8 bg-linear-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center font-bold text-black text-sm">
+                F
               </div>
-              <h2 className="text-xl font-bold text-white">FreelanceHub</h2>
+              <h2 className="text-lg font-bold text-white truncate">FreelanceHub</h2>
+            </div>
+          )}
+          {!sidebarOpen && (
+            <div className="w-8 h-8 bg-linear-to-br from-green-400 to-green-600 rounded-lg flex items-center justify-center font-bold text-black text-sm">
+              F
             </div>
           )}
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="rounded-lg p-2 text-gray-400 hover:bg-green-600 hover:text-white transition-colors duration-200"
+            className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-green-600 hover:text-white transition-colors duration-200"
             aria-label="Toggle sidebar"
           >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 space-y-2 px-4 py-6">
-          <NavLink
-            href="/admin/dashboard"
-            label="Dashboard"
-            icon={<DashboardIcon />}
-            sidebarOpen={sidebarOpen}
-          />
-          <NavLink
-            href="/admin/orders"
-            label="Orders"
-            icon={<FolderIcon />}
-            sidebarOpen={sidebarOpen}
-          />
-          <NavLink
-            href="/admin/freelancers"
-            label="Freelancers"
-            icon={<UsersIcon />}
-            sidebarOpen={sidebarOpen}
-          />
-          <NavLink
-            href="/admin/invoices"
-            label="Invoices"
-            icon={<ChartIcon />}
-            sidebarOpen={sidebarOpen}
-          />
-          <NavLink
-            href="/admin/analytics"
-            label="Analytics"
-            icon={<ChartIcon />}
-            sidebarOpen={sidebarOpen}
-          />
-          <NavLink
-            href="/admin/settings"
-            label="Settings"
-            icon={<SettingsIcon />}
-            sidebarOpen={sidebarOpen}
-          />
+          <NavLink href="/admin/dashboard"   label="Dashboard"   icon={<DashboardIcon />} sidebarOpen={sidebarOpen} />
+          <NavLink href="/admin/orders"      label="Orders"      icon={<FolderIcon />}    sidebarOpen={sidebarOpen} />
+          <NavLink href="/admin/freelancers" label="Freelancers" icon={<UsersIcon />}     sidebarOpen={sidebarOpen} />
+          <NavLink href="/admin/invoices"    label="Invoices"    icon={<ChartIcon />}     sidebarOpen={sidebarOpen} />
+          <NavLink href="/admin/analytics"   label="Analytics"   icon={<ChartIcon />}     sidebarOpen={sidebarOpen} />
+          <NavLink href="/admin/settings"    label="Settings"    icon={<SettingsIcon />}  sidebarOpen={sidebarOpen} />
         </nav>
 
         {/* Footer */}
         <div className="border-t border-gray-800 px-4 py-4 space-y-2">
           <Link
-            href="/admin/settings"
+            href="/admin/profile"
             className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gray-300 hover:bg-green-600 hover:text-white transition-colors duration-200 flex items-center gap-3"
           >
             <ProfileIcon />
@@ -161,7 +176,56 @@ export default function AdminLayout({ children }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-white">{children}</main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top navbar */}
+        <div className="shrink-0 flex items-center justify-end border-b border-gray-200 bg-white px-8 py-3">
+          <div className="relative" ref={dropdownRef}>
+            {/* Trigger */}
+            <button
+              onClick={() => setDropdownOpen((o) => !o)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-gray-50 transition-colors focus:outline-none"
+            >
+              <div className="text-right">
+                <p className="text-sm font-bold text-gray-900 leading-tight">{adminName || 'Admin'}</p>
+                <p className="text-xs text-gray-400 leading-tight">Administrator</p>
+              </div>
+              <Avatar image={adminImage} name={adminName} />
+            </button>
+
+            {/* Dropdown */}
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                <Link
+                  href="/admin/profile"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <ProfileIcon />
+                  My Profile
+                </Link>
+                <Link
+                  href="/admin/settings"
+                  onClick={() => setDropdownOpen(false)}
+                  className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <SettingsIcon />
+                  Settings
+                </Link>
+                <div className="my-1 border-t border-gray-100" />
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogoutIcon />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <main className="flex-1 overflow-auto bg-white">{children}</main>
+      </div>
     </div>
   );
 }

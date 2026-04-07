@@ -53,6 +53,9 @@ export default function ProfilePage() {
   const [newEdu, setNewEdu] = useState(EMPTY_EDU);
   const [addingEdu, setAddingEdu] = useState(false);
   const [eduSaving, setEduSaving] = useState(false);
+  const [editingEduId, setEditingEduId] = useState(null);
+  const [editEduDraft, setEditEduDraft] = useState(EMPTY_EDU);
+  const [eduEditSaving, setEduEditSaving] = useState(false);
 
   // Image upload
   const [imgUploading, setImgUploading] = useState(false);
@@ -72,6 +75,7 @@ export default function ProfilePage() {
     dateOfBirth: p.dateOfBirth ? p.dateOfBirth.split('T')[0] : '',
     primaryAddress: p.primaryAddress ?? '',
     secondaryAddress: p.secondaryAddress ?? '',
+    region: p.region ?? '',
     languages: Array.isArray(p.languages) ? [...p.languages] : [],
   });
 
@@ -220,6 +224,35 @@ export default function ProfilePage() {
     }
   };
 
+  const startEditEdu = (edu) => {
+    setEditingEduId(edu.id);
+    setEditEduDraft({ degree: edu.degree ?? '', fieldOfStudy: edu.fieldOfStudy ?? '', specialization: edu.specialization ?? '' });
+  };
+
+  const cancelEditEdu = () => {
+    setEditingEduId(null);
+    setEditEduDraft(EMPTY_EDU);
+  };
+
+  const handleUpdateEducation = async (id) => {
+    setEduEditSaving(true);
+    try {
+      const res = await fetch(`/api/profile/education/${id}`, {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editEduDraft),
+      });
+      const json = await res.json();
+      if (res.ok && json.ok) {
+        setEducations((prev) => prev.map((e) => (e.id === id ? json.education : e)));
+        cancelEditEdu();
+      }
+    } finally {
+      setEduEditSaving(false);
+    }
+  };
+
   if (authError) {
     return (
       <div className="min-h-screen bg-white p-8">
@@ -230,8 +263,79 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-white p-8 flex items-center justify-center">
-        <p className="text-gray-500">Loading profile…</p>
+      <div className="min-h-screen bg-white p-8">
+        {/* Header skeleton */}
+        <div className="mb-8 flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-9 w-44 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="h-4 w-72 bg-gray-100 rounded animate-pulse" />
+          </div>
+          <div className="h-11 w-36 bg-gray-200 rounded-lg animate-pulse" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal info card */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+              <div className="h-7 w-52 bg-gray-200 rounded animate-pulse mb-6" />
+              <div className="space-y-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between pb-4 border-b border-gray-100">
+                    <div className="h-4 w-28 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-4 w-40 bg-gray-200 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Languages card */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+              <div className="h-7 w-36 bg-gray-200 rounded animate-pulse mb-6" />
+              <div className="flex gap-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-7 w-20 bg-gray-100 rounded-full animate-pulse" />
+                ))}
+              </div>
+            </div>
+
+            {/* Education card */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+              <div className="h-7 w-32 bg-gray-200 rounded animate-pulse mb-6" />
+              <div className="space-y-3">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-2">
+                    <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-3 w-36 bg-gray-100 rounded animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Avatar card */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 p-6 text-center">
+              <div className="w-32 h-32 rounded-full bg-gray-200 animate-pulse mx-auto mb-4" />
+              <div className="h-5 w-32 bg-gray-200 rounded animate-pulse mx-auto mb-2" />
+              <div className="h-4 w-24 bg-gray-100 rounded animate-pulse mx-auto" />
+            </div>
+
+            {/* Account status card */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 p-6">
+              <div className="h-6 w-36 bg-gray-200 rounded animate-pulse mb-4" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div className="h-4 w-24 bg-gray-100 rounded animate-pulse" />
+                    <div className="h-6 w-20 bg-gray-200 rounded-full animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -301,6 +405,20 @@ export default function ProfilePage() {
                 <Field label="Date of Birth" name="dateOfBirth" type="date" value={draft.dateOfBirth} onChange={handleChange} />
                 <Field label="Primary Address" name="primaryAddress" value={draft.primaryAddress} onChange={handleChange} />
                 <Field label="Secondary Address" name="secondaryAddress" value={draft.secondaryAddress} onChange={handleChange} />
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Region</label>
+                  <select
+                    name="region"
+                    value={draft.region ?? ''}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-600 focus:outline-none bg-white"
+                  >
+                    <option value="">— Select region —</option>
+                    {Object.entries(REGION_LABELS).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
           </div>
@@ -368,29 +486,76 @@ export default function ProfilePage() {
               )}
 
               {educations.map((edu) => (
-                <div key={edu.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      {edu.degree && (
-                        <p className="font-semibold text-gray-900">{edu.degree}</p>
-                      )}
-                      {edu.fieldOfStudy && (
-                        <p className="text-gray-600 text-sm">{edu.fieldOfStudy}</p>
-                      )}
-                      {edu.specialization && (
-                        <p className="text-gray-500 text-sm italic">{edu.specialization}</p>
+                <div key={edu.id} className="rounded-lg border border-gray-200 overflow-hidden">
+                  {editingEduId === edu.id ? (
+                    /* ── Inline edit form ── */
+                    <div className="p-4 bg-green-50 border-2 border-green-200 rounded-lg space-y-3">
+                      <Field
+                        label="Degree"
+                        name="degree"
+                        value={editEduDraft.degree}
+                        onChange={(e) => setEditEduDraft((p) => ({ ...p, degree: e.target.value }))}
+                        placeholder="e.g. Bachelor of Science"
+                      />
+                      <Field
+                        label="Field of Study"
+                        name="fieldOfStudy"
+                        value={editEduDraft.fieldOfStudy}
+                        onChange={(e) => setEditEduDraft((p) => ({ ...p, fieldOfStudy: e.target.value }))}
+                        placeholder="e.g. Computer Science"
+                      />
+                      <Field
+                        label="Specialization"
+                        name="specialization"
+                        value={editEduDraft.specialization}
+                        onChange={(e) => setEditEduDraft((p) => ({ ...p, specialization: e.target.value }))}
+                        placeholder="e.g. Machine Learning"
+                      />
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => handleUpdateEducation(edu.id)}
+                          disabled={eduEditSaving}
+                          className="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 transition-colors font-semibold text-sm disabled:opacity-50"
+                        >
+                          {eduEditSaving ? 'Saving…' : 'Save'}
+                        </button>
+                        <button
+                          onClick={cancelEditEdu}
+                          disabled={eduEditSaving}
+                          className="px-4 py-2 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── View row ── */
+                    <div className="p-4 bg-gray-50 flex items-start justify-between">
+                      <div className="space-y-1">
+                        {edu.degree && <p className="font-semibold text-gray-900">{edu.degree}</p>}
+                        {edu.fieldOfStudy && <p className="text-gray-600 text-sm">{edu.fieldOfStudy}</p>}
+                        {edu.specialization && <p className="text-gray-500 text-sm italic">{edu.specialization}</p>}
+                      </div>
+                      {isEditing && (
+                        <div className="flex items-center gap-2 ml-4 shrink-0">
+                          <button
+                            onClick={() => startEditEdu(edu)}
+                            className="text-green-600 hover:text-green-800 transition-colors"
+                            title="Edit"
+                          >
+                            <EditIcon />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEducation(edu.id)}
+                            className="text-red-500 hover:text-red-700 transition-colors"
+                            title="Delete"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
                       )}
                     </div>
-                    {isEditing && (
-                      <button
-                        onClick={() => handleDeleteEducation(edu.id)}
-                        className="text-red-500 hover:text-red-700 ml-4 shrink-0"
-                        title="Remove"
-                      >
-                        <TrashIcon />
-                      </button>
-                    )}
-                  </div>
+                  )}
                 </div>
               ))}
 

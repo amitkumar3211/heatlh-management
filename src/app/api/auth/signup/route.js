@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/server';
+import { createSupabaseServiceClient } from '@/lib/supabase/server';
 import { prisma } from '@/lib/prisma';
+import { sendConfirmationEmail } from '@/lib/mailer';
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const email = String(body.email ?? '').trim();
-    const password = String(body.password ?? '');
-    const fullName = String(body.fullName ?? '').trim();
+    const email     = String(body.email     ?? '').trim();
+    const password  = String(body.password  ?? '');
+    const fullName  = String(body.fullName  ?? '').trim();
     const firstName = String(body.firstName ?? '').trim();
     const lastName  = String(body.lastName  ?? '').trim();
 
@@ -18,35 +19,37 @@ export async function POST(request) {
       );
     }
 
-    const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase.auth.signUp({
+    const supabase = createSupabaseServiceClient();
+
+    // Create user without triggering Supabase's built-in email
+    const { data: createData, error: createError } = await supabase.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: fullName ? { fullName } : undefined,
-      },
+      email_confirm: false,
+      user_metadata: fullName ? { fullName } : undefined,
     });
 
-    if (error || !data.user) {
-      const msg = error.message?.toLowerCase?.() ?? '';
-      if (msg.includes('rate limit') || msg.includes('too many requests')) {
+    if (createError || !createData?.user) {
+      const msg = createError?.message?.toLowerCase?.() ?? '';
+      if (msg.includes('already registered') || msg.includes('already exists')) {
         return NextResponse.json(
-          {
-            ok: false,
-            error:
-              'Email rate limit exceeded. Please wait a bit and try again. Your account requires email verification before login.',
-          },
-          { status: 429 },
+          { ok: false, error: 'An account with this email already exists.' },
+          { status: 400 },
         );
       }
-      return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: createError?.message ?? 'Signup failed' },
+        { status: 400 },
+      );
     }
 
-    // Create the profile row immediately so it exists when the user first logs in
+    const user = createData.user;
+
+    // Create profile row immediately
     await prisma.profile.upsert({
-      where: { id: data.user.id },
+      where: { id: user.id },
       create: {
-        id: data.user.id,
+        id: user.id,
         email,
         fullName: fullName || null,
         firstName: firstName || null,
@@ -56,12 +59,22 @@ export async function POST(request) {
       update: {},
     });
 
+    // Generate a confirmation link and send via our SMTP
+    const { data: linkData } = await supabase.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    });
+
+    const confirmUrl = linkData?.properties?.action_link;
+    if (confirmUrl) {
+      await sendConfirmationEmail(email, confirmUrl);
+    }
+
     return NextResponse.json({
       ok: true,
-      user: data.user,
-      session: data.session,
-      message:
-        'Account created. Please check your email to verify before accessing your profile.',
+      user,
+      session: null,
+      message: 'Account created. Please check your email to verify before accessing your profile.',
     });
   } catch (e) {
     return NextResponse.json(

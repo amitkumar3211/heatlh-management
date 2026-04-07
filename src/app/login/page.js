@@ -10,8 +10,6 @@ export default function LoginPage() {
   const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
   const [toast, setToast] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -79,30 +77,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        showToast(json.error ?? 'Could not send reset link', 'error');
-        return;
-      }
-      showToast('Password reset link sent to your email!', 'success');
-      setShowForgotPassword(false);
-      setForgotEmail('');
-    } catch (err) {
-      showToast(err?.message ?? 'Could not send reset link', 'error');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-green-50 flex items-center justify-center p-4">
       {toast && <Toast message={toast.message} type={toast.type} />}
@@ -156,21 +130,28 @@ export default function LoginPage() {
             </div>
 
             {/* Forgot Password Link */}
-            <button
-              type="button"
-              onClick={() => setShowForgotPassword(true)}
+            <a
+              href="/forgot-password"
               className="text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
             >
               Forgot password?
-            </button>
+            </a>
 
             {/* Login Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+              className="w-full bg-linear-to-r from-green-500 to-green-600 text-white font-semibold py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Signing in...
+                </span>
+              ) : 'Sign In'}
             </button>
           </form>
 
@@ -191,49 +172,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Forgot Password Modal */}
-      {showForgotPassword && (
-        <div className="fixed inset-0 bg-gray-800/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Reset Password</h2>
-            <p className="text-gray-600 mb-6">
-              Enter your email address and we&apos;ll send you a link to reset your password.
-            </p>
-
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <input
-                type="email"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
-                placeholder="your@email.com"
-                className="w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 placeholder-gray-500 transition-all focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
-                required
-              />
-
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForgotPassword(false);
-                    setForgotEmail('');
-                  }}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 rounded-lg bg-green-600 text-white font-medium hover:bg-green-700 transition-colors"
-                >
-                  {isLoading ? 'Sending...' : 'Send Reset Link'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

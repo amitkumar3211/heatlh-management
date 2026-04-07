@@ -53,10 +53,27 @@ export async function POST(request) {
     let is_superadmin = false;
     const profile = await prisma.profile.findUnique({
       where: { id: data.user.id },
-      select: { role: true, isSuperadmin: true },
+      select: { role: true, isSuperadmin: true, accountStatus: true },
     });
     if (profile?.role) role = profile.role;
     if (typeof profile?.isSuperadmin === 'boolean') is_superadmin = profile.isSuperadmin;
+
+    // If email just confirmed and account is still PENDING → auto-activate
+    if (profile?.accountStatus === 'PENDING' && data.user.email_confirmed_at) {
+      await prisma.profile.update({
+        where: { id: data.user.id },
+        data: { accountStatus: 'ACTIVE' },
+      }).catch(() => {});
+      profile.accountStatus = 'ACTIVE';
+    }
+
+    // Block login for non-active accounts (skip for superadmin)
+    if (!is_superadmin && profile?.accountStatus && profile.accountStatus !== 'ACTIVE') {
+      return NextResponse.json(
+        { ok: false, error: 'Your account is not active. Please contact an administrator.' },
+        { status: 403 },
+      );
+    }
 
     const redirectTo = role === 'ADMIN' ? '/admin/dashboard' : '/freelancer/dashboard';
 
